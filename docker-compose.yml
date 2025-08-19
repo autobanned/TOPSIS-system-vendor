@@ -1,0 +1,43 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: php/Dockerfile
+    container_name: spk_php
+    restart: unless-stopped
+    volumes:
+      - ./src:/var/www/html
+    networks:
+      - spk_network
+
+  db:
+    image: mariadb:10.6  # Use MariaDB instead of MySQL
+    container_name: spk_mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: spk_cloud_vendor
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./maria_data:/var/lib/mysql
+    networks:
+      - spk_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: spk_nginx
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - web
+      - db
+    networks:
+      - spk_network
+
+networks:
+  spk_network:
+    driver: bridge
